@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NIELIT Patna Attendance System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+body { 
+    font-family: Arial; 
+    text-align:center; 
+    background:#0acfe1; 
+}
+
+h1 { 
+    background:#d5ec08; 
+    color:black; 
+    padding:15px; 
+}
+
+table { 
+    margin:auto; 
+    border-collapse:collapse; 
+    width:95%; 
+    background:white; 
+}
+
+th,td { 
+    border:1px solid black; 
+    padding:6px; 
+    font-size:14px; 
+}
+
+button { 
+    padding:5px 8px; 
+    cursor:pointer; 
+    margin:2px;
+}
+
+.present { background:lightgreen; font-weight:bold; }
+.absent { background:salmon; font-weight:bold; }
+
+.dateBox { 
+    margin:15px; 
+    font-size:16px; 
+}
+
+.summaryBox{
+    margin-top:15px;
+    font-size:18px;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>B.Tech CSE 2026 Attendance<br>NIELIT Patna</h1>
+
+<div class="dateBox">
+<label><b>Select Date:</b></label>
+<input type="date" id="attendanceDate">
+<h3 id="selectedDate"></h3>
+</div>
+
+<table id="attendanceTable">
+<tr>
+<th>Roll No</th>
+<th>Registration No</th>
+<th>Name</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</table>
+
+<br>
+<button onclick="showSummary()">Show Summary</button>
+<button onclick="clearAll()">Clear All</button>
+<button onclick="downloadPDF()">Download PDF</button>
+
+<div class="summaryBox" id="summary"></div>
+
+<script>
+// Auto set today's date
+let today = new Date().toISOString().split('T')[0];
+document.getElementById("attendanceDate").value = today;
+document.getElementById("selectedDate").innerHTML =
+"Attendance Date: " + today;
+
+document.getElementById("attendanceDate").addEventListener("change", function(){
+    document.getElementById("selectedDate").innerHTML =
+    "Attendance Date: " + this.value;
+});
+
+// Format: [Roll No, Registration No, Name]
+const students = [
+[1, "NDU202601326", "Rupesh Kumar"],
+[2, "NDU202601327", "Erulla Akshay Raj"],
+[3, "NDU202601328", "KAUSHAL KUMAR"],
+[4, "NDU202601329", "UTTAM KUMAR"],
+[5, "NDU202601330", "AKSHAY KUMAR"],
+[6, "NDU202601331", "SATYAM SHARMA"],
+[7, "NDU202601332", "KHUSHI RAJ"],
+[8, "NDU202601333", "KARAN RAJ VERMA"],
+[9, "NDU202601334", "RAJ KUMAR"],
+[10, "NDU202601335", "ADITYA KUMAR"],
+[11, "NDU202601336", "VIKASH KUMAR"],
+[12, "NDU202601337", "DEEPAK"],
+[13, "NDU202601338", "SUDHAKAR"],
+[14, "NDU202601339", "SHREYA KUMARI"],
+[15, "NDU202601340", "RIJU MANDAL"],
+[16, "NDU202601341", "NIDHI CHAUHAN"],
+[17, "NDU202601342", "SNEH LATA"],
+[18, "NDU202601343", "Vaishnavi Gupta"],
+[19, "NDU202601344", "AKASH GANGULY"],
+[20, "NDU202601345", "Ayush Yadav"],
+[21, "NDU202601346", "GAUTAM KUMAR"],
+[22, "NDU202601347", "PAWAN PASWAN"],
+[23, "NDU202601348", "SHIVANI KUMARI"],
+[24, "NDU202601349", "Jalaludin  Ansari"],
+[25, "NDU202601350", "KOMAL KUMARI"],
+[26, "NDU202601351", "ANSH PRATAP SINGH"],
+[27, "NDU202601352", "Nedunuri Hitesh Varma Teja"],
+[28, "NDU202601353", "AYUSH YADAV"],
+[29, "NDU202601354", "ARYAN GAURAV"],
+[30, "NDU202601355", "BANOTHU DIVYA"],
+[31, "NDU202601356", "DHARUN DHWAJ"],
+[32, "NDU202601357", "ISHANT AVI"],
+[33, "NDU202601358", "PRAVIN ANKIT SHRIVASTWA"],
+[34, "NDU202601359", "ATUL KUMAR TIWARI"],
+[35, "NDU202601360", "PRINCE KUMAR"],
+[36, "NDU202601361", "ARYAN RAJ"],
+[37, "NDU202601362", "PRINCE KUMAR"],
+[38, "NDU202601363", "DAKSH VISHAL CHOURASIYA"],
+[39, "NDU202601364", "ABHISHEK KUMAR"],
+[40, "NDU202601365", "ANSHIKA KUMARI"],
+[41, "NDU202601366", "VAISHNAVI KUMARI"],
+[42, "NDU202601367", "AYUSH PRAKASH"],
+[43, "NDU202601368", "HARSHIT KUMAR"],
+[44, "NDU202601369", "VIKASH KUMAR"],
+[45, "NDU202601370", "FAIQUE ALAM"],
+[46, "NDU202601371", "BANOTH LOKESH"],
+[47, "NDU202601372", "PRINCE PRIYADARSHI"],
+[48, "NDU202601373", "SATYAM KUMAR"],
+[49, "NDU202601374", "HARSH RAJ"],
+[50, "NDU202601375", "KANISHK DARSHAN"],
+[51, "NDU202601376", "PRINCE KUMAR"],
+[52, "NDU202601377", "ATIT ADITYA"],
+[53, "NDU202601378", "NIRAJ KUMAR"],
+[54, "NDU202601379", "HIMANSHU KUMAR"],
+[55, "NDU202601380", "HIMESH KUMAR MAHALA"],
+[56, "NDU202601381", "AMAN KUMAR"],
+[57, "NDU202601382", "RAKSHIT KUMAR"],
+[58, "NDU202601383", "SHRISHTI RAJ"]
+];
+
+let table = document.getElementById("attendanceTable");
+
+students.forEach((student, index) => {
+    let row = table.insertRow();
+    row.insertCell(0).innerHTML = student[0];  
+    row.insertCell(1).innerHTML = student[1]; 
+    row.insertCell(2).innerHTML = student[2]; 
+    row.insertCell(3).innerHTML = "Not Marked";
+
+    let actionCell = row.insertCell(4);
+    actionCell.innerHTML =
+        "<button onclick='markPresent(this)'>Present</button>" +
+        "<button onclick='markAbsent(this)'>Absent</button>" +
+        "<button onclick='markRefresh(this)'>Refresh</button>";
+});
+
+function markPresent(btn){
+    let row = btn.parentElement.parentElement;
+    row.cells[3].innerHTML = "Present";
+    row.cells[3].className = "present";
+}
+
+function markAbsent(btn){
+    let row = btn.parentElement.parentElement;
+    row.cells[3].innerHTML = "Absent";
+    row.cells[3].className = "absent";
+}
+
+function markRefresh(btn){
+    let row = btn.parentElement.parentElement;
+    row.cells[3].innerHTML = "Not Marked";
+    row.cells[3].className = "";
+}
+
+function showSummary(){
+    let present = document.getElementsByClassName("present").length;
+    let absent = document.getElementsByClassName("absent").length;
+    let total = students.length;
+
+    document.getElementById("summary").innerHTML =
+    "Total: " + total + 
+    " | Present: " + present + 
+    " | Absent: " + absent;
+}
+
+function clearAll(){
+    let rows = table.rows;
+    for(let i=1; i<rows.length; i++){
+        rows[i].cells[3].innerHTML = "Not Marked";
+        rows[i].cells[3].className = "";
+    }
+    document.getElementById("summary").innerHTML = "";
+}
+
+function downloadPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    let date = document.getElementById("attendanceDate").value;
+    
+    doc.setFontSize(16);
+    doc.text("NIELIT Patna - B.Tech CSE 2026", 105, 15, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("Attendance Date: " + date, 105, 22, { align: "center" });
+    let rowsData = [];
+    let tableDOM = document.getElementById("attendanceTable");
+    
+    for(let i = 1; i < tableDOM.rows.length; i++){
+        let roll = tableDOM.rows[i].cells[0].innerText;
+        let reg = tableDOM.rows[i].cells[1].innerText;
+        let name = tableDOM.rows[i].cells[2].innerText;
+        let status = tableDOM.rows[i].cells[3].innerText;
+        rowsData.push([roll, reg, name, status]);
+    }
+    doc.autoTable({
+        startY: 30,
+        head: [['Roll No', 'Registration No', 'Name', 'Status']],
+        body: rowsData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] },
+        styles: { halign: 'center' },
+        didParseCell: function(data) {
+            if (data.section === 'body' && data.column.index === 3) {
+                if (data.cell.raw === 'Present') {
+                    data.cell.styles.fillColor = [144, 238, 144]; 
+                    data.cell.styles.fontStyle = 'bold';
+                } else if (data.cell.raw === 'Absent') {
+                    data.cell.styles.fillColor = [250, 128, 114]; 
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        }
+    });
+    doc.save("Attendance_" + date + ".pdf");
+}
+</script>
+
+</body>
+</html>
